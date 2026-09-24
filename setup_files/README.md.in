@@ -1,0 +1,11 @@
+# @PROJECT_NAME@
+
+![Python Logo](https://www.python.org/static/community_logos/python-logo.png "Sample inline image")
+
+@PROJECT_DESCRIPTION@
+
+[Repository for this project](@PROJECT_HOMEPAGE_URL@.git)<br>
+[Documentation for this project](@PROJECT_HOMEPAGE_URL@/wiki)<br>
+[To report issues](@PROJECT_HOMEPAGE_URL@/issues)<br>
+[Change log for this project](@PROJECT_HOMEPAGE_URL@/master/CHANGELOG.md)<br>
+[Contribution guidelines for this project](@PROJECT_HOMEPAGE_URL@/master/CONTRIBUTING.md)<br>

@@ -1,0 +1,38 @@
+[project]
+name = "dir_file_scan_grocsoftware"
+version = "0.4.3"
+
+authors = [
+  { name="Randal Eike", email="grocsoftware@gmail.com" },
+]
+maintainers = [
+  {name="Randal Eike", email="grocsoftware@gmail.com"},
+]
+
+description = "Directory/file list generation tool"
+readme = {file = "README.md", content-type = "text/markdown"}
+license = "MIT"
+keywords = ["directory", "file", "list", "tools", "generation", "Python"]
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Repository = "https://github.com/randaleike/python_dir_file_list"
+Documentation = "https://github.com/randaleike/python_dir_file_list/wiki"
+Issues = "https://github.com/randaleike/python_dir_file_list/issues"
+Changelog = "https://github.com/randaleike/python_dir_file_list/master/CHANGELOG.md"
+
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[tool.coverage.report]
+fail_under = 90
+
+[tool.coverage.run]
+branch = true
+include = ["src/*"]
+command_line = "-m unittest discover -s tests/"

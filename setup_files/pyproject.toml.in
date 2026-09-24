@@ -1,0 +1,38 @@
+[project]
+name = "@ProjectId@_grocsoftware"
+version = "@PROJECT_VERSION@"
+
+authors = [
+  { name="Randal Eike", email="grocsoftware@gmail.com" },
+]
+maintainers = [
+  {name="Randal Eike", email="grocsoftware@gmail.com"},
+]
+
+description = "@PROJECT_DESCRIPTION@"
+readme = {file = "README.md", content-type = "text/markdown"}
+license = "MIT"
+keywords = ["code", "generation", "maintenance", "tools", "utilities", "C", "CPP", "Python", "Typescript", "files", "developer"]
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Repository = "https://github.com/randaleike/@PROJECT_NAME@.git"
+Documentation = "https://github.com/randaleike/@PROJECT_NAME@/wiki"
+Issues = "https://github.com/randaleike/@PROJECT_NAME@/issues"
+Changelog = "https://github.com/randaleike/@PROJECT_NAME@/master/CHANGELOG.md"
+
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[tool.coverage.report]
+fail_under = 90
+
+[tool.coverage.run]
+branch = true
+include = ["src/code_tools_grocsoftware/*"]
+command_line = "-m unittest discover -s tests/"
