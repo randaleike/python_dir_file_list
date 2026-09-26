@@ -1,31 +1,31 @@
 #!/usr/bin/python
-'''
-@package MP4_Convert
-'''
-''' 
-Copyright (c) 2020 Randal Eike
- 
- Permission is hereby granted, free of charge, to any person obtaining a 
- copy of this software and associated documentation files (the "Software"),
- to deal in the Software without restriction, including without limitation
- the rights to use, copy, modify, merge, publish, distribute, sublicense,
- and/or sell copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following conditions:
- 
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
- 
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY  
- CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-'''
+"""@package dirscan_grocsoftware
+@brief Directory/file scanning utilities
+"""
+#==========================================================================
+#Copyright (c) 2020 Randal Eike
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#==========================================================================
 
-# Import 
-import re, sys, os
+import re
+import os
 
 class DirectoryList(object):
     '''
@@ -35,39 +35,69 @@ class DirectoryList(object):
     from a base directory
     '''
 
-    def __init__(self, baseDir=None):
-        if (baseDir is not None):
-            self.__baseDir = os.path.abspath(baseDir)
+    def __init__(self, base_directory=None):
+        '''
+        @brief Initialize the DirectoryList object
+        @param base_directory The base directory to start scanning from
+        '''
+        if base_directory is not None:
+            self._base_dir = os.path.abspath(base_directory)
         else:
-            self.__baseDir = os.path.getcwd()
+            self._base_dir = os.path.abspath(os.getcwd())
 
-        self.__subdirs = []
+        self._subdir_list = []
 
-    def __getSubdirList(self, startingDir, recurse):
-        #print ("start: "+startingDir)
-        self.__subdirs.append(startingDir)
-        for root, dirs, files in os.walk(startingDir):
-            if (len(dirs) > 0):
+    def _get_subdirectory_list(self, start_directory: str, recurse: bool):
+        '''
+        @brief Recursively get the list of subdirectories starting from start_directory
+        @param start_directory:string The directory to start scanning from
+        @param recurse:boolean Whether to recurse into subdirectories
+        '''
+        #print ("start: "+start_directory)
+        self._subdir_list.append(start_directory)
+        for _, dirs, _ in os.walk(start_directory):
+            if (len(dirs) > 0) and recurse:
                 for subdir in dirs:
-                    fullSubdir = os.path.abspath(os.path.join(startingDir, subdir))
-                    self.__getSubdirList(fullSubdir, True)
+                    full_sub_dir = os.path.abspath(os.path.join(start_directory, subdir))
+                    self._get_subdirectory_list(full_sub_dir, recurse)
+            else:
+                self._subdir_list.extend(dirs)
 
     def __str__(self):
-        return str(self.__subdirs)
+        '''
+        @brief Return the list of subdirectories as a string
+        @return string: A string representation of the list of subdirectories
+        '''
+        retstr=""
+        prepend = "["
+        for subdir in self._subdir_list:
+            retstr += prepend + subdir
+            prepend = ",\n"
+        retstr += "]"
+        return retstr
 
-    def __scanSubDirsList(self, recurse = True):
-        del self.__subdirs[:]
-        if (recurse):
-            print ("Recursing")
-            self.__getSubdirList(self.__baseDir, True)
+    def _scan_subdirectory_list(self, recurse: bool = True):
+        '''
+        @brief Scan the subdirectory list starting from the base directory
+        @param recurse:boolean Whether to recurse into subdirectories
+        '''
+        del self._subdir_list[:]
+        if recurse:
+            #print ("Recursing")
+            self._get_subdirectory_list(self._base_dir, True)
         else:
-            self.__subdirs.append(self.__baseDir)
-        self.__subdirs = list(dict.fromkeys(self.__subdirs))
+            self._subdir_list.append(self._base_dir)
+        self._subdir_list = list(dict.fromkeys(self._subdir_list))
 
-    
-    def getList(self, recurse = True):
-        self.__scanSubDirsList(recurse)
-        return self.__subdirs
+
+    def get_list(self, recurse: bool = True):
+        '''
+        @brief Get the list of subdirectories starting from the base directory
+        @param recurse:boolean Whether to recurse into subdirectories
+        @return list: A list of subdirectories
+        '''
+        self._scan_subdirectory_list(recurse)
+        return self._subdir_list
 
 class FileList(object):
     '''
@@ -76,86 +106,117 @@ class FileList(object):
     This class with scan the file system and create a list of files
     contained within a list of directories
     '''
-    
-    def __init__(self, baseNameFilter=None, extFilter = None):
-        self.__fileList = []
-        if (baseNameFilter is not None):
-            self.__baseNameFilter = baseNameFilter
+
+    def __init__(self, base_name_filter = None, ext_filter = None):
+        '''
+        @brief Initialize the file_list object with optional base name and extension filters
+        @param base_name_filter:string A regular expression to filter the base names of files
+        @param ext_filter:string A regular expression to filter the file extensions
+        '''
+        self._file_list = []
+        if base_name_filter is not None:
+            self._base_name_filter = base_name_filter
         else:
-            self.__baseNameFilter = r'^[\w,\s-]+'
+            self._base_name_filter = r'^[\w,\s-]+'
 
-        if (extFilter is not None):
-            self.__extFilter = extFilter
+        if ext_filter is not None:
+            self._ext_filter = ext_filter
         else:
-            self.__extFilter = r'[A-Za-z0-9]{0,3}'
-        self.__nameMatch = self.__baseNameFilter + r'\.' + self.__extFilter
+            self._ext_filter = r'[A-Za-z0-9]{0,3}'
+        self._name_match = self._base_name_filter + r'\.' + self._ext_filter
 
 
-    def __isMatch(self, fileName):
-        baseName = os.path.basename(fileName)
-        if (re.match(self.__nameMatch,baseName) is None): 
+    def _is_match(self, test_file_name:str):
+        '''
+        @brief Check if the given file name matches the base name and extension filters
+        @param test_file_name:string The name of the file to check
+        @return bool: True if the file name matches the filters, False otherwise
+        '''
+        base_name = os.path.basename(test_file_name)
+        if re.match(self._name_match,base_name) is None:
             return False
         else:
             return True
 
-    def __getFileList(self, dir):
-        for root, dirs, files in os.walk(dir):
+    def _get_file_list(self, file_dir: str):
+        '''
+        @brief Get the list of files in the specified directory that match the filters
+        @param file_dir:string The directory to scan for files
+        '''
+        for root, _, files in os.walk(file_dir):
             for filename in files:
-                if (self.__isMatch(filename)):
-                    self.__fileList.append(os.path.join(root, filename))
+                if self._is_match(filename):
+                    self._file_list.append(os.path.join(root, filename))
 
     def __str__(self):
-        return str(self.__fileList)
+        '''
+        @brief Get a string representation of the file list
+        @return string: The string representation of the file list
+        '''
+        retstr=""
+        prepend = "["
+        for filename in self._file_list:
+            retstr += prepend + filename
+            prepend = ",\n"
+        retstr += "]"
+        return retstr
 
-        
-    def getList(self, dirList):
-        del self.__fileList[:]
-        seenDirs = set()
-        for dir in dirList:
-            normalizedDir = os.path.normcase(os.path.abspath(dir))
-            if normalizedDir in seenDirs:
+
+    def get_list(self, dir_list):
+        '''
+        @brief Get the list of files from the specified directories that match the filters
+        @param dir_list:list A list of directories to scan for files
+        @return list: The list of matching files
+        '''
+        del self._file_list[:]
+        seen_dirs = set()
+        for current_dir in dir_list:
+            normalized_dir = os.path.normcase(os.path.abspath(current_dir))
+            if normalized_dir in seen_dirs:
                 continue
-            seenDirs.add(normalizedDir)
-            self.__getFileList(dir)
-        self.__fileList = list(dict.fromkeys(self.__fileList))
-        return self.__fileList
+            seen_dirs.add(normalized_dir)
+            self._get_file_list(current_dir)
+        self._file_list = list(dict.fromkeys(self._file_list))
+        return self._file_list
 
 class Scanfiles(object):
     '''
     @brief Scan the folder and sub-folders for matching files
 
-    This class will scan the folder and sub-folders for files that match 
+    This class will scan the folder and sub-folders for files that match
     the input filter.
     '''
 
-    def __init__(self, startingDir=None, baseNameFilter=None, extFilter=None):
-        self.__dirList = DirectoryList(startingDir)
-        self.__fileList = FileList(baseNameFilter, extFilter)
-        self.debug = True
+    def __init__(self, start_directory=None, base_name_filter=None, ext_filter=None):
+        '''
+        @brief Initialize the Scanfiles object with the starting directory and filters
+        @param start_directory:string The starting directory for the scan
+        @param base_name_filter:string A regular expression to filter the base names of files
+        @param ext_filter:string The extension filter for files
+        '''
+        self._dir_list = DirectoryList(start_directory)
+        self._file_list = FileList(base_name_filter, ext_filter)
 
-    def __logList(self, header, list):
-        if (self.debug):
-            print (header)
-            if (len(list) > 0):
-                for entry in list:
-                    print (entry)
-            else:
-                print("Empty")
+    def log_dir_list(self):
+        '''
+        @brief Log the contents of the directory list with a header
+        '''
+        print("Directory List:")
+        print(str(self._dir_list))
 
-    def getFileList(self, recurse = False):
-        dirList = self.__dirList.getList(recurse)
-        self.__logList("Directory List:", dirList)
-        fileList = self.__fileList.getList(dirList)
-        self.__logList("File List:", fileList)
-        return fileList
+    def log_file_list(self):
+        '''
+        @brief Log the contents of the file list with a header
+        '''
+        print("File List:")
+        print(str(self._file_list))
 
-
-def main():
-    scanner = Scanfiles(startingDir="/mnt/raid5/MakeMKV", extFilter='mkv')
-    filelist = scanner.getFileList(True)
-    print (filelist)
-
-if __name__ == '__main__':
-    main()
-
-    
+    def get_file_list(self, recurse: bool = False):
+        '''
+        @brief Get the list of files from the starting directory and sub-directories that match the filters
+        @param recurse:bool Whether to recursively scan sub-directories
+        @return list: The list of matching files
+        '''
+        dir_list = self._dir_list.get_list(recurse)
+        ret_file_list = self._file_list.get_list(dir_list)
+        return ret_file_list

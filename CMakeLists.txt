@@ -46,8 +46,7 @@ set(PYTHON_TEST_DIR
     )
 
 set(PYTHON_TEST_SRC
-    ${PYTHON_TEST_DIR}/test_dir_list_gen.py
-    ${PYTHON_TEST_DIR}/test_file_list_gen.py
+    ${PYTHON_TEST_DIR}/test_scan.py
     )
 
 
