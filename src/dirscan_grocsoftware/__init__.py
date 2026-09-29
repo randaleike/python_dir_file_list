@@ -24,31 +24,8 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #==========================================================================
 
-import argparse
-import scan
+__version__ = '0.8.3'
 
+__all__ = ["scan"]
 
-def duplicate_tree(source_root: str, dest_root: str, recurse: bool = True):
-    '''
-    @brief Create a duplicate of a directory tree
-    @param source_root:string Source directory to duplicate
-    @param dest_root:string Destination directory for the duplicate
-    @param recurse:bool Whether to recursively duplicate subdirectories
-    '''
-    dupobj = scan.DuplicateDirectoryTree(dest_root, source_root)
-    dupobj.duplicate_tree(recurse)
-
-def main():
-    '''
-    @brief Command-line interface for duplicating a directory tree
-    '''
-    parser = argparse.ArgumentParser(description="Duplicate a directory tree")
-    parser.add_argument("src", help="Source directory to duplicate")
-    parser.add_argument("dest", help="Destination directory for the duplicate")
-    parser.add_argument("--recurse", "-r", action="store_true", help="Recursively duplicate subdirectories")
-    args = parser.parse_args()
-
-    duplicate_tree(args.src, args.dest)
-
-if __name__ == "__main__":
-    main()
+from . import scan

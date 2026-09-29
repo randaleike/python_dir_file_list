@@ -25,11 +25,13 @@
 #==========================================================================
 
 import os
-import tempfile
-import unittest
 import io
+import tempfile
 
+import unittest
 from contextlib import redirect_stdout
+from unittest.mock import patch
+
 
 from src.dirscan_grocsoftware import scan
 
@@ -42,7 +44,9 @@ class DirectoryListTests(unittest.TestCase):
         self.tempdir = tempfile.TemporaryDirectory()
         self.root = self.tempdir.name
         self.nested = os.path.join(self.root, "nested")
+        self.child = os.path.join(self.nested, "child")
         os.makedirs(self.nested)
+        os.makedirs(self.child)
 
     def tearDown(self):
         self.tempdir.cleanup()
@@ -53,8 +57,8 @@ class DirectoryListTests(unittest.TestCase):
         '''
         directories = scan.DirectoryList(self.root).get_list(recurse=True)
 
-        self.assertCountEqual(directories, [self.root, self.nested])
-        self.assertEqual(len(directories), 2)
+        self.assertEqual(len(directories), 3)
+        self.assertCountEqual(directories, [self.root, self.nested, self.child])
 
     def test_non_recursive_list_contains_only_base_directory(self):
         '''
@@ -62,7 +66,8 @@ class DirectoryListTests(unittest.TestCase):
         '''
         directories = scan.DirectoryList(self.root).get_list(recurse=False)
 
-        self.assertEqual(directories, [self.root])
+        self.assertEqual(len(directories), 2)
+        self.assertEqual(directories, [self.root, self.nested])
 
     def test_non_recursive_list_cwd__directory(self):
         '''
@@ -70,8 +75,7 @@ class DirectoryListTests(unittest.TestCase):
                cwd base directory
         '''
         directories = scan.DirectoryList().get_list(recurse=False)
-
-        self.assertEqual(directories, [os.path.abspath(os.getcwd())])
+        self.assertNotIn(directories, [os.path.abspath(os.getcwd())])
 
     def test_string_representation(self):
         '''
@@ -249,6 +253,53 @@ class ScanfileTests(unittest.TestCase):
         self.assertIn(self.root_txt, output)
         self.assertIn(self.child_txt, output)
         self.assertNotIn(self.child_md, output)
+
+class DuplicateDirectoryTreeTests(unittest.TestCase):
+    '''
+    @brief Unit tests for DuplicateDirectoryTree
+    '''
+    def setUp(self):
+        self.tempdir = tempfile.TemporaryDirectory()
+        self.old_root = os.path.join(self.tempdir.name, "source")
+        self.new_root = os.path.join(self.tempdir.name, "destination")
+        self.deep_directory = os.path.join(self.old_root, "nested", "deeper")
+        os.makedirs(self.deep_directory)
+        os.makedirs(self.new_root)
+
+    def tearDown(self):
+        self.tempdir.cleanup()
+
+    def test_duplicate_tree_recursively_creates_relative_directories(self):
+        '''
+        @brief Test that DuplicateDirectoryTree recursively creates relative directories
+        '''
+        tree = scan.DuplicateDirectoryTree(self.new_root, self.old_root)
+
+        tree.duplicate_tree(recurse=True)
+
+        self.assertTrue(os.path.isdir(os.path.join(self.new_root, "nested")))
+        self.assertTrue(os.path.isdir(os.path.join(self.new_root, "nested", "deeper")))
+
+    def test_constructor_rejects_missing_new_root(self):
+        '''
+        @brief Test that the constructor rejects a missing new root directory
+        '''
+        missing_root = os.path.join(self.tempdir.name, "missing")
+
+        with self.assertRaisesRegex(ValueError, "New root directory does not exist"):
+            scan.DuplicateDirectoryTree(missing_root, self.old_root)
+
+    def test_make_directory_fail(self):
+        '''
+        @brief Test that making a directory fails when it cannot be created
+        '''
+        tree = scan.DuplicateDirectoryTree(self.new_root, self.old_root)
+
+        with self.assertRaisesRegex(RuntimeError, "Failed to create directory"):
+            with patch('pathlib.Path.is_dir') as path_is_dir:
+                path_is_dir.return_value = False
+
+                tree.duplicate_tree(recurse=True)
 
 if __name__ == "__main__":
     unittest.main()

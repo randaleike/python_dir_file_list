@@ -3,7 +3,7 @@
 @brief Directory/file scanning utilities
 """
 #==========================================================================
-#Copyright (c) 2020 Randal Eike
+# Copyright (c) 2020 Randal Eike
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -26,6 +26,7 @@
 
 import re
 import os
+from pathlib import Path
 
 class DirectoryList(object):
     '''
@@ -40,10 +41,10 @@ class DirectoryList(object):
         @brief Initialize the DirectoryList object
         @param base_directory The base directory to start scanning from
         '''
-        if base_directory is not None:
-            self._base_dir = os.path.abspath(base_directory)
-        else:
+        if base_directory is None:
             self._base_dir = os.path.abspath(os.getcwd())
+        else:
+            self._base_dir = os.path.abspath(base_directory)
 
         self._subdir_list = []
 
@@ -55,13 +56,15 @@ class DirectoryList(object):
         '''
         #print ("start: "+start_directory)
         self._subdir_list.append(start_directory)
-        for _, dirs, _ in os.walk(start_directory):
-            if (len(dirs) > 0) and recurse:
-                for subdir in dirs:
-                    full_sub_dir = os.path.abspath(os.path.join(start_directory, subdir))
-                    self._get_subdirectory_list(full_sub_dir, recurse)
+        dirs = os.listdir(start_directory)
+        for entry in dirs:
+            if not os.path.isdir(os.path.join(start_directory, entry)):
+                continue
             else:
-                self._subdir_list.extend(dirs)
+                full_sub_dir = os.path.abspath(os.path.join(start_directory, entry))
+                self._subdir_list.append(full_sub_dir)
+                if recurse:
+                    self._get_subdirectory_list(full_sub_dir, recurse)
 
     def __str__(self):
         '''
@@ -82,13 +85,8 @@ class DirectoryList(object):
         @param recurse:boolean Whether to recurse into subdirectories
         '''
         del self._subdir_list[:]
-        if recurse:
-            #print ("Recursing")
-            self._get_subdirectory_list(self._base_dir, True)
-        else:
-            self._subdir_list.append(self._base_dir)
+        self._get_subdirectory_list(self._base_dir, recurse)
         self._subdir_list = list(dict.fromkeys(self._subdir_list))
-
 
     def get_list(self, recurse: bool = True):
         '''
@@ -220,3 +218,43 @@ class Scanfiles(object):
         dir_list = self._dir_list.get_list(recurse)
         ret_file_list = self._file_list.get_list(dir_list)
         return ret_file_list
+
+class DuplicateDirectoryTree(DirectoryList):
+    '''
+    @brief Class to duplicate a directory tree from an old root to a new root
+    '''
+
+    def __init__(self, new_root: str, old_root: str = None):
+        '''
+        @brief Initialize the DuplicateDirectoryTree object with the starting directory
+        @param new_root:string New root directory for the duplicate directory tree
+        @param old_root:string The old root directory for comparison
+        '''
+        super().__init__(old_root)
+        if not os.path.isdir(new_root):
+            raise ValueError(f"New root directory does not exist: {new_root}")
+        self._new_root = Path(new_root).resolve()
+
+    def _make_new_dir(self, new_dir: str) -> bool:
+        '''
+        @brief Create the new directory if it does not exist
+        @param new_dir:string The path of the new directory to create
+        '''
+        new_path = Path(new_dir)
+        if not new_path.exists():
+            new_path.mkdir(parents=True, exist_ok=True)
+        return new_path.is_dir()
+
+    def duplicate_tree(self, recurse: bool = False):
+        '''
+        @brief Get the list of directories from the old root and duplicate them in the new root
+        @param recurse:bool Whether to recursively scan sub-directories
+        @return list: The list of duplicate directories
+        '''
+        all_dirs = self.get_list(recurse)
+        for old_dir in all_dirs:
+            relative_path = os.path.relpath(old_dir, self._base_dir)
+            new_directory = os.path.join(self._new_root, relative_path)
+
+            if not self._make_new_dir(str(new_directory)):
+                raise RuntimeError(f"Failed to create directory: {relative_path}")
