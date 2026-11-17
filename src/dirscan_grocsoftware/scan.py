@@ -211,7 +211,8 @@ class Scanfiles(object):
 
     def get_file_list(self, recurse: bool = False):
         '''
-        @brief Get the list of files from the starting directory and sub-directories that match the filters
+        @brief Get the list of files from the starting directory and
+        sub-directories that match the filters
         @param recurse:bool Whether to recursively scan sub-directories
         @return list: The list of matching files
         '''
