@@ -3,7 +3,7 @@
 @brief Directory/file scanning utilities
 """
 #==========================================================================
-# Copyright (c) 2020 Randal Eike
+# Copyright (c) 2020-2026 Randal Eike
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
